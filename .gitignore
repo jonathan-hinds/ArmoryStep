@@ -1,0 +1,51 @@
+# Unity-generated folders. These are caches and can be rebuilt from the
+# committed Assets, Packages, and ProjectSettings folders.
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Player builds.
+/[Bb]uild/
+/[Bb]uilds/
+
+# Unity-generated IDE files.
+/.vs/
+/.vscode/
+/.idea/
+ExportedObj/
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity-generated crash/debug artifacts.
+sysinfo.txt
+*.stackdump
+
+# Unity Asset Store tools.
+/[Aa]ssets/AssetStoreTools*
+
+# Addressables build output (the source settings remain tracked).
+/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/[Aa]ssets/[Ss]treamingAssets/aa/*
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+
+# OS/editor noise.
+.DS_Store
+Thumbs.db
+Desktop.ini
+*~
