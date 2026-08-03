@@ -1,0 +1,6 @@
+{
+  "name": "OneStep.Platform",
+  "rootNamespace": "OneStep.Platform",
+  "references": ["OneStep.Core"],
+  "autoReferenced": true
+}

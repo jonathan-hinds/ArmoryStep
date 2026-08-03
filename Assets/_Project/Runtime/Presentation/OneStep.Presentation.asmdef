@@ -1,0 +1,14 @@
+{
+  "name": "OneStep.Presentation",
+  "rootNamespace": "OneStep.Presentation",
+  "references": [
+    "OneStep.Core",
+    "OneStep.Input",
+    "OneStep.Platform",
+    "Unity.2D.PixelPerfect",
+    "Unity.InputSystem",
+    "Unity.InputSystem.ForUI",
+    "Unity.ugui"
+  ],
+  "autoReferenced": true
+}

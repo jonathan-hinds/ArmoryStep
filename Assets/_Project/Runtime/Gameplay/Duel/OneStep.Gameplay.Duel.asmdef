@@ -1,0 +1,6 @@
+{
+  "name": "OneStep.Gameplay.Duel",
+  "rootNamespace": "OneStep.Gameplay.Duel",
+  "references": ["OneStep.Core", "OneStep.Networking"],
+  "autoReferenced": false
+}

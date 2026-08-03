@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>{{{ PRODUCT_NAME }}}</title>
+  <link rel="stylesheet" href="TemplateData/style.css">
+</head>
+<body>
+  <main id="unity-container" aria-label="{{{ PRODUCT_NAME }}}">
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <section id="loading" aria-live="polite">
+      <div id="progress"><div id="progress-fill"></div></div>
+      <span id="loading-label">Loading…</span>
+    </section>
+    <button id="fullscreen" type="button" aria-label="Enter fullscreen">⛶</button>
+  </main>
+  <script>
+    const container = document.querySelector("#unity-container");
+    const canvas = document.querySelector("#unity-canvas");
+    const loading = document.querySelector("#loading");
+    const progressFill = document.querySelector("#progress-fill");
+    const loadingLabel = document.querySelector("#loading-label");
+    const fullscreen = document.querySelector("#fullscreen");
+    const buildUrl = "Build";
+    const loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+    const config = {
+      arguments: [],
+      dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+      frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+      codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+      productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+      productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+      matchWebGLToCanvasSize: true,
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2)
+    };
+
+    function fitViewport() {
+      const viewport = window.visualViewport;
+      const width = viewport ? viewport.width : window.innerWidth;
+      const height = viewport ? viewport.height : window.innerHeight;
+      document.documentElement.style.setProperty("--viewport-width", `${width}px`);
+      document.documentElement.style.setProperty("--viewport-height", `${height}px`);
+    }
+
+    fitViewport();
+    window.addEventListener("resize", fitViewport, { passive: true });
+    window.addEventListener("orientationchange", fitViewport, { passive: true });
+    document.addEventListener("fullscreenchange", fitViewport);
+    window.visualViewport?.addEventListener("resize", fitViewport, { passive: true });
+    document.addEventListener("touchmove", event => event.preventDefault(), { passive: false });
+
+    const script = document.createElement("script");
+    script.src = loaderUrl;
+    script.onload = () => createUnityInstance(canvas, config, progress => {
+      progressFill.style.width = `${Math.round(progress * 100)}%`;
+      loadingLabel.textContent = `Loading ${Math.round(progress * 100)}%`;
+    }).then(instance => {
+      loading.hidden = true;
+      fullscreen.addEventListener("click", () => instance.SetFullscreen(1));
+    }).catch(message => {
+      loadingLabel.textContent = "Unable to start the game";
+      console.error(message);
+    });
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>

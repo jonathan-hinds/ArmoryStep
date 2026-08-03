@@ -1,0 +1,9 @@
+{
+  "name": "OneStep.Networking",
+  "rootNamespace": "OneStep.Networking",
+  "references": [
+    "OneStep.Core",
+    "Unity.Services.Multiplayer"
+  ],
+  "autoReferenced": true
+}

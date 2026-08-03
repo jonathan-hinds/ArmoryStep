@@ -1,0 +1,7 @@
+{
+  "name": "OneStep.Tests.PlayMode",
+  "rootNamespace": "OneStep.Tests.PlayMode",
+  "references": ["OneStep.Platform"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

@@ -1,0 +1,8 @@
+{
+  "name": "OneStep.Tests.EditMode",
+  "rootNamespace": "OneStep.Tests.EditMode",
+  "references": ["OneStep.Core", "OneStep.Networking"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

@@ -1,33 +1,21 @@
-# ArmoryStep
+# OneStep foundation
 
-Unity project for ArmoryStep. The project currently uses Unity `6000.4.10f1`.
+Unity `6000.4.10f1` foundation for a portrait-first, mobile-browser, tile roguelike. This pass intentionally implements no combat, world generation, turns, movement resolution, inventory, progression, or duel rules.
 
-## Safe source-control workflow
+## Start here
 
-The complete, reproducible project state is stored in these committed paths:
+1. Open `Assets/_Project/Scenes/Bootstrap.unity`.
+2. Complete the Unity Dashboard steps in `Docs/UnityDashboard.md`.
+3. Enter Play Mode. The bootstrap initializes Unity Gaming Services, signs in anonymously, and loads `FoundationTest`.
+4. Use the validation scene to inspect the fixed portrait frame, safe area, Input System diagnostics, touch d-pad, and Relay host/join lifecycle.
 
-- `Assets/` (including every `.meta` file)
-- `Packages/`
-- `ProjectSettings/`
+Run `Tools > OneStep > Build Foundation` after intentionally changing the generated scene layout or base project settings. The command is idempotent and recreates both foundation scenes and placeholder assets.
 
-Unity's `Library/`, `Temp/`, `Logs/`, `UserSettings/`, IDE files, and builds are deliberately ignored because they are machine-local or generated. Unity recreates them after a checkout. Binary art, audio, video, fonts, and native plugins are stored through Git LFS.
+## Documentation
 
-For a reliable checkpoint:
+- `Docs/Architecture.md` — folders, assemblies, ownership, and extension points
+- `Docs/UnityDashboard.md` — required project linking, environments, Authentication, Relay, and testing
+- `Docs/WebBuild.md` — development/production builds, local serving, itch.io packaging, and browser risks
+- `Docs/OneBitResearch.md` — researched presentation/control constraints and what this setup does (and does not) implement
 
-```powershell
-git status
-git add -A
-git commit -m "Describe the working checkpoint"
-git push
-```
-
-A commit protects against bad local edits; the push protects against loss of the computer. Uncommitted work is not recoverable from Git.
-
-Before opening the project on another machine, install Git LFS and clone normally. If binary assets appear as tiny text pointer files, run:
-
-```powershell
-git lfs install
-git lfs pull
-```
-
-To return all tracked files to a known working checkpoint, first commit or stash anything worth keeping, then use Git's revert/restore tools. Never copy another project's `Library/` folder or commit generated caches as a workaround.
+The source-controlled project state lives in `Assets`, `Packages`, and `ProjectSettings`. `Library`, `Temp`, `Logs`, `UserSettings`, and `Builds` are generated and ignored.

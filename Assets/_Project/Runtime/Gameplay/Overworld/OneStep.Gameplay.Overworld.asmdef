@@ -1,0 +1,6 @@
+{
+  "name": "OneStep.Gameplay.Overworld",
+  "rootNamespace": "OneStep.Gameplay.Overworld",
+  "references": ["OneStep.Core", "OneStep.Input"],
+  "autoReferenced": false
+}

@@ -1,0 +1,21 @@
+{
+  "name": "OneStep.Editor",
+  "rootNamespace": "OneStep.Editor",
+  "references": [
+    "OneStep.Bootstrap",
+    "OneStep.Core",
+    "OneStep.Input",
+    "OneStep.Networking",
+    "OneStep.Platform",
+    "OneStep.Presentation",
+    "OneStep.Services",
+    "Unity.2D.PixelPerfect",
+    "Unity.InputSystem",
+    "Unity.InputSystem.ForUI",
+    "Unity.Netcode.Runtime",
+    "Unity.RenderPipelines.Universal.2D.Runtime",
+    "Unity.ugui"
+  ],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}

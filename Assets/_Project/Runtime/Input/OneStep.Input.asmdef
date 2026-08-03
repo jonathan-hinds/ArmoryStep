@@ -1,0 +1,6 @@
+{
+  "name": "OneStep.Input",
+  "rootNamespace": "OneStep.Input",
+  "references": ["Unity.InputSystem"],
+  "autoReferenced": true
+}

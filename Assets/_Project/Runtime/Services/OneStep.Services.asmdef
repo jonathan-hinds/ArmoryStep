@@ -1,0 +1,11 @@
+{
+  "name": "OneStep.Services",
+  "rootNamespace": "OneStep.Services",
+  "references": [
+    "OneStep.Core",
+    "Unity.Services.Core",
+    "Unity.Services.Core.Environments",
+    "Unity.Services.Authentication"
+  ],
+  "autoReferenced": true
+}

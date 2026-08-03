@@ -1,0 +1,11 @@
+{
+  "name": "OneStep.Bootstrap",
+  "rootNamespace": "OneStep.Bootstrap",
+  "references": [
+    "OneStep.Core",
+    "OneStep.Networking",
+    "OneStep.Services",
+    "Unity.ugui"
+  ],
+  "autoReferenced": true
+}
