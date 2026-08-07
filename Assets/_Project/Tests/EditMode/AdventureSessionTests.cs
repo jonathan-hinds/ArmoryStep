@@ -166,5 +166,22 @@ namespace OneStep.Tests.EditMode
 
             Assert.That(target, Is.EqualTo(expectedIndex));
         }
+
+        [TestCase(-5, 10, 0f)]
+        [TestCase(5, 0, 0f)]
+        [TestCase(5, 10, 0.5f)]
+        [TestCase(15, 10, 1f)]
+        public void AdventureHud_NormalizesResourceAndExperienceFillSafely(int current, int maximum, float expected)
+        {
+            Assert.That(AdventureHudView.CalculateNormalizedFill(current, maximum), Is.EqualTo(expected));
+        }
+
+        [TestCase(9, 4.5f)]
+        [TestCase(8, 4f)]
+        [TestCase(0, 0.5f)]
+        public void AdventureCamera_CentersOnTilemapBounds(int worldWidth, float expectedCenter)
+        {
+            Assert.That(VerticalCameraFollower.CalculateHorizontalCenter(worldWidth), Is.EqualTo(expectedCenter));
+        }
     }
 }

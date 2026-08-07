@@ -13,10 +13,16 @@ namespace OneStep.Gameplay.Overworld
         public void Configure(AdventureSession session, int worldWidth)
         {
             _session = session;
-            _fixedX = (worldWidth - 1) * 0.5f;
+            _fixedX = CalculateHorizontalCenter(worldWidth);
             _minimumY = GetComponent<Camera>().orthographicSize - 0.5f;
             _highestCameraY = Mathf.Max(_minimumY, session.PlayerPosition.y + 3f);
             transform.position = new Vector3(_fixedX, _highestCameraY, transform.position.z);
+        }
+
+        public static float CalculateHorizontalCenter(int worldWidth)
+        {
+            // Tilemap cell x occupies [x, x + 1], so cells 0..width-1 span [0, width].
+            return Mathf.Max(1, worldWidth) * 0.5f;
         }
 
         private void LateUpdate()

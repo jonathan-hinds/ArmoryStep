@@ -35,11 +35,7 @@ namespace OneStep.Gameplay.Overworld
         private Text[] _slotDots;
         private Text _creationSlotLabel;
         private InputField _nameInput;
-        private Text _healthText;
-        private Text _manaText;
-        private Text _progressText;
-        private Text _levelText;
-        private Text _messageText;
+        private AdventureHudView _adventureHud;
         private Text _deathText;
         private FloatingJoystickInput _floatingJoystick;
         private DiscreteInputDriver _discreteInput;
@@ -249,15 +245,17 @@ namespace OneStep.Gameplay.Overworld
             Stretch(inputSurface.rectTransform);
             inputSurface.raycastTarget = true;
 
+            var circleFrame = CreateCircleSprite(true);
+            var circleFill = CreateCircleSprite(false);
             var ring = CreatePanel("JoystickRing", inputSurface.transform, new Color(0.7f, 0.9f, 0.83f, 0.2f));
             ring.raycastTarget = false;
-            ring.sprite = CreateCircleSprite(true);
+            ring.sprite = circleFrame;
             ring.preserveAspect = true;
             ring.rectTransform.sizeDelta = new Vector2(190f, 190f);
             ring.rectTransform.anchorMin = ring.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             var knob = CreatePanel("JoystickKnob", ring.transform, new Color(0.35f, 1f, 0.72f, 0.55f));
             knob.raycastTarget = false;
-            knob.sprite = CreateCircleSprite(false);
+            knob.sprite = circleFill;
             knob.preserveAspect = true;
             knob.rectTransform.sizeDelta = new Vector2(72f, 72f);
             knob.rectTransform.anchorMin = knob.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
@@ -266,20 +264,9 @@ namespace OneStep.Gameplay.Overworld
             _floatingJoystick.Configure(configuration, ring.rectTransform, knob.rectTransform);
             _floatingJoystick.ActionRequested += HandlePlayerAction;
 
-            var hud = CreatePanel("HUD", root, new Color(0.02f, 0.04f, 0.045f, 0.92f));
-            SetRect(hud.rectTransform, new Vector2(0.025f, 0.865f), new Vector2(0.975f, 0.985f));
-            hud.raycastTarget = false;
-            _healthText = CreateText("Health", hud.transform, "HP", 29, TextAnchor.MiddleLeft, new Color(1f, 0.43f, 0.42f));
-            SetRect(_healthText.rectTransform, new Vector2(0.03f, 0.5f), new Vector2(0.38f, 0.95f));
-            _manaText = CreateText("Mana", hud.transform, "MP", 29, TextAnchor.MiddleLeft, new Color(0.42f, 0.7f, 1f));
-            SetRect(_manaText.rectTransform, new Vector2(0.03f, 0.05f), new Vector2(0.38f, 0.5f));
-            _progressText = CreateText("Progress", hud.transform, "0 STEPS", 32, TextAnchor.MiddleRight, _warm);
-            SetRect(_progressText.rectTransform, new Vector2(0.55f, 0.5f), new Vector2(0.97f, 0.95f));
-            _levelText = CreateText("Level", hud.transform, "LV 1", 25, TextAnchor.MiddleRight, Color.white);
-            SetRect(_levelText.rectTransform, new Vector2(0.45f, 0.05f), new Vector2(0.97f, 0.5f));
-
-            _messageText = CreateText("Message", root, "Drag anywhere to move • tap to wait", 25, TextAnchor.MiddleCenter, new Color(0.86f, 0.91f, 0.89f));
-            SetRect(_messageText.rectTransform, new Vector2(0.06f, 0.02f), new Vector2(0.94f, 0.085f));
+            var hud = CreateRect("AdventureHUD", root);
+            _adventureHud = hud.gameObject.AddComponent<AdventureHudView>();
+            _adventureHud.Build(circleFrame, circleFill, _ink, _panel, _accent, _warm);
             return root;
         }
 
@@ -411,7 +398,6 @@ namespace OneStep.Gameplay.Overworld
             _session.BonfireEntered += OpenCampfire;
             _session.Died += HandleDeath;
             _session.LeveledUp += HandleLevelUp;
-            _session.MessageRaised += ShowMessage;
 
             var worldObject = new GameObject("AdventureWorld");
             _worldView = worldObject.AddComponent<AdventureWorldView>();
@@ -431,7 +417,6 @@ namespace OneStep.Gameplay.Overworld
             _deathModal.SetActive(false);
             SetGameplayInput(true);
             UpdateHud();
-            ShowMessage(savedAdventure == null ? "Drag to move • tap to wait • bonfire at 100" : "Resumed saved adventure");
         }
 
         private void HandlePlayerAction(Vector2Int direction)
@@ -453,7 +438,6 @@ namespace OneStep.Gameplay.Overworld
 
         private void HandleLevelUp(int level)
         {
-            ShowMessage($"LEVEL {level} • permanent stats increased");
             _repository.Save(_roster);
         }
 
@@ -473,7 +457,6 @@ namespace OneStep.Gameplay.Overworld
         {
             _campfireModal.SetActive(false);
             SetGameplayInput(true);
-            ShowMessage("Adventure continues. Death will end this active run.");
         }
 
         private void SaveAndGoHome()
@@ -508,18 +491,7 @@ namespace OneStep.Gameplay.Overworld
                 return;
             }
 
-            _healthText.text = $"HP  {_session.Health} / {_activeCharacter.maxHealth}";
-            _manaText.text = $"MP  {_session.Mana} / {_activeCharacter.maxMana}";
-            _progressText.text = $"{_session.Progress} STEPS";
-            _levelText.text = $"LV {_activeCharacter.level}  •  XP {_activeCharacter.experience}/{_activeCharacter.ExperienceToNextLevel}  •  DMG {_activeCharacter.meleeDamage}";
-        }
-
-        private void ShowMessage(string message)
-        {
-            if (_messageText != null)
-            {
-                _messageText.text = message;
-            }
+            _adventureHud.Bind(_session, _activeCharacter);
         }
 
         private void SetGameplayInput(bool enabled)
@@ -542,7 +514,6 @@ namespace OneStep.Gameplay.Overworld
                 _session.BonfireEntered -= OpenCampfire;
                 _session.Died -= HandleDeath;
                 _session.LeveledUp -= HandleLevelUp;
-                _session.MessageRaised -= ShowMessage;
             }
             if (_worldView != null)
             {
