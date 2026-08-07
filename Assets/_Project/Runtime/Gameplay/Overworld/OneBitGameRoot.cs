@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using OneStep.Platform;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
+using static OneStep.Gameplay.Overworld.RuntimeUiFactory;
 
 namespace OneStep.Gameplay.Overworld
 {
@@ -17,7 +19,6 @@ namespace OneStep.Gameplay.Overworld
         private readonly Color _panel = new(0.075f, 0.115f, 0.125f, 0.97f);
         private readonly Color _accent = new(0.25f, 0.86f, 0.61f, 1f);
         private readonly Color _warm = new(1f, 0.58f, 0.22f, 1f);
-        private Font _font;
         private ICharacterRepository _repository;
         private CharacterRosterData _roster;
         private CharacterData _activeCharacter;
@@ -29,8 +30,10 @@ namespace OneStep.Gameplay.Overworld
         private GameObject _campfireModal;
         private GameObject _deathModal;
         private Text _slotCounter;
-        private Text _cardText;
-        private Button _cardButton;
+        private readonly List<CharacterSlotCardView> _characterCards = new();
+        private CharacterCarousel _characterCarousel;
+        private Text[] _slotDots;
+        private Text _creationSlotLabel;
         private InputField _nameInput;
         private Text _healthText;
         private Text _manaText;
@@ -54,7 +57,6 @@ namespace OneStep.Gameplay.Overworld
             }
             configuration.EnsureDefaults();
 
-            _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             _repository = new PlayerPrefsCharacterRepository();
             _roster = _repository.Load();
             EnsureEventSystem();
@@ -85,11 +87,11 @@ namespace OneStep.Gameplay.Overworld
 
             if (keyboard.aKey.wasPressedThisFrame || keyboard.leftArrowKey.wasPressedThisFrame)
             {
-                ShiftSlotLeft();
+                _characterCarousel.SelectRelative(-1);
             }
             else if (keyboard.dKey.wasPressedThisFrame || keyboard.rightArrowKey.wasPressedThisFrame)
             {
-                ShiftSlotRight();
+                _characterCarousel.SelectRelative(1);
             }
             else if (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame)
             {
@@ -133,50 +135,111 @@ namespace OneStep.Gameplay.Overworld
         private RectTransform BuildSelectionScreen(Transform parent)
         {
             var root = CreateScreen("CharacterSelection", parent);
-            var title = CreateText("Title", root, "CHOOSE YOUR CHARACTER", 40, TextAnchor.MiddleCenter, _accent);
-            SetRect(title.rectTransform, new Vector2(0.08f, 0.86f), new Vector2(0.92f, 0.95f));
-            var hint = CreateText("Hint", root, "Five persistent character slots", 27, TextAnchor.MiddleCenter, new Color(0.72f, 0.8f, 0.79f));
-            SetRect(hint.rectTransform, new Vector2(0.08f, 0.81f), new Vector2(0.92f, 0.86f));
+            var title = CreateText("Title", root, "CHOOSE YOUR CHARACTER", 34, TextAnchor.MiddleCenter, _accent);
+            SetRect(title.rectTransform, new Vector2(0.06f, 0.89f), new Vector2(0.94f, 0.96f));
+            var hint = CreateText("Hint", root, "Your heroes. Your progress. Your adventure.", 24, TextAnchor.MiddleCenter, new Color(0.66f, 0.74f, 0.73f));
+            SetRect(hint.rectTransform, new Vector2(0.06f, 0.845f), new Vector2(0.94f, 0.89f));
 
-            _slotCounter = CreateText("SlotCounter", root, "1 / 5", 32, TextAnchor.MiddleCenter, Color.white);
-            SetRect(_slotCounter.rectTransform, new Vector2(0.38f, 0.74f), new Vector2(0.62f, 0.8f));
-            var left = CreateButton("PreviousSlot", root, "<", 64, new Vector2(0.04f, 0.36f), new Vector2(0.19f, 0.71f), ShiftSlotLeft);
-            var right = CreateButton("NextSlot", root, ">", 64, new Vector2(0.81f, 0.36f), new Vector2(0.96f, 0.71f), ShiftSlotRight);
-            left.image.color = new Color(0.08f, 0.14f, 0.15f, 1f);
-            right.image.color = new Color(0.08f, 0.14f, 0.15f, 1f);
+            _slotCounter = CreateText("SlotCounter", root, "01 / 05", 25, TextAnchor.MiddleCenter, Color.white);
+            SetRect(_slotCounter.rectTransform, new Vector2(0.35f, 0.795f), new Vector2(0.65f, 0.84f));
 
-            _cardButton = CreateButton("CharacterSlotCard", root, string.Empty, 34, new Vector2(0.2f, 0.3f), new Vector2(0.8f, 0.73f), ActivateSelectedSlot);
-            _cardButton.image.color = _panel;
-            var outline = _cardButton.gameObject.AddComponent<Outline>();
-            outline.effectColor = _accent;
-            outline.effectDistance = new Vector2(4f, -4f);
-            _cardText = _cardButton.GetComponentInChildren<Text>();
-            _cardText.alignment = TextAnchor.MiddleCenter;
+            var viewportImage = CreatePanel("CharacterCarousel", root, new Color(0f, 0f, 0f, 0.001f));
+            SetRect(viewportImage.rectTransform, new Vector2(0f, 0.245f), new Vector2(1f, 0.795f));
+            viewportImage.gameObject.AddComponent<RectMask2D>();
+            var content = CreateRect("Content", viewportImage.transform);
+            content.anchorMin = content.anchorMax = new Vector2(0f, 0.5f);
+            content.pivot = new Vector2(0f, 0.5f);
 
-            var controls = CreateText("Controls", root, "Tap a slot to create, start, or resume", 25, TextAnchor.MiddleCenter, new Color(0.56f, 0.68f, 0.67f));
-            SetRect(controls.rectTransform, new Vector2(0.08f, 0.18f), new Vector2(0.92f, 0.26f));
+            content.anchoredPosition = Vector2.zero;
+
+            var scrollRect = viewportImage.gameObject.AddComponent<ScrollRect>();
+            scrollRect.viewport = viewportImage.rectTransform;
+            scrollRect.content = content;
+            _characterCarousel = viewportImage.gameObject.AddComponent<CharacterCarousel>();
+            _characterCarousel.Configure(scrollRect, viewportImage.rectTransform, content);
+            _characterCarousel.SelectionChanged += HandleCarouselSelectionChanged;
+            _characterCarousel.SlotActivated += HandleCarouselSlotActivated;
+
+            for (var index = 0; index < CharacterRosterData.SlotCount; index++)
+            {
+                var card = CharacterSlotCardView.Create(content, index, _characterCarousel.HandleCardTapped);
+                var cardRect = card.GetComponent<RectTransform>();
+                _characterCards.Add(card);
+                _characterCarousel.RegisterCard(cardRect);
+            }
+
+            var dots = CreateRect("SlotIndicators", root);
+            SetRect(dots, new Vector2(0.28f, 0.19f), new Vector2(0.72f, 0.24f));
+            _slotDots = new Text[CharacterRosterData.SlotCount];
+            for (var index = 0; index < _slotDots.Length; index++)
+            {
+                _slotDots[index] = CreateText($"SlotDot_{index + 1}", dots, "o", 27, TextAnchor.MiddleCenter, new Color(0.30f, 0.39f, 0.39f));
+                SetRect(_slotDots[index].rectTransform,
+                    new Vector2(index / (float)_slotDots.Length, 0f),
+                    new Vector2((index + 1f) / _slotDots.Length, 1f));
+            }
+
+            var controls = CreateText("Controls", root, "SWIPE TO BROWSE   -   TAP TO SELECT", 22, TextAnchor.MiddleCenter, new Color(0.52f, 0.63f, 0.62f));
+            SetRect(controls.rectTransform, new Vector2(0.06f, 0.135f), new Vector2(0.94f, 0.19f));
             return root;
         }
 
         private RectTransform BuildCreationScreen(Transform parent)
         {
             var root = CreateScreen("CharacterCreation", parent);
-            var title = CreateText("Title", root, "CREATE CHARACTER", 52, TextAnchor.MiddleCenter, _accent);
-            SetRect(title.rectTransform, new Vector2(0.08f, 0.82f), new Vector2(0.92f, 0.93f));
+            var title = CreateText("Title", root, "CREATE CHARACTER", 45, TextAnchor.MiddleCenter, _accent);
+            SetRect(title.rectTransform, new Vector2(0.08f, 0.88f), new Vector2(0.92f, 0.95f));
+            _creationSlotLabel = CreateText("Slot", root, "SLOT 01", 23, TextAnchor.MiddleCenter, new Color(0.6f, 0.69f, 0.68f));
+            SetRect(_creationSlotLabel.rectTransform, new Vector2(0.08f, 0.835f), new Vector2(0.92f, 0.88f));
             var classPanel = CreatePanel("ClassCard", root, _panel);
-            SetRect(classPanel.rectTransform, new Vector2(0.12f, 0.48f), new Vector2(0.88f, 0.79f));
-            var classTitle = CreateText("ClassName", classPanel.transform, "WAYFARER", 44, TextAnchor.MiddleCenter, _warm);
-            SetRect(classTitle.rectTransform, new Vector2(0.08f, 0.68f), new Vector2(0.92f, 0.94f));
-            var classCopy = CreateText("ClassCopy", classPanel.transform,
-                $"Placeholder class\n\n{configuration.BaseHealth} Health  •  {configuration.BaseMana} Mana\n{configuration.BaseMeleeDamage} Melee Damage\n\nMove cardinally and bump enemies to attack.",
-                29, TextAnchor.MiddleCenter, Color.white);
-            SetRect(classCopy.rectTransform, new Vector2(0.08f, 0.08f), new Vector2(0.92f, 0.69f));
+            SetRect(classPanel.rectTransform, new Vector2(0.08f, 0.43f), new Vector2(0.92f, 0.81f));
+            var classTitle = CreateText("ClassName", classPanel.transform, "WAYFARER", 42, TextAnchor.MiddleLeft, _warm);
+            SetRect(classTitle.rectTransform, new Vector2(0.055f, 0.80f), new Vector2(0.68f, 0.95f));
+            var role = CreateText("Role", classPanel.transform, "BALANCED MELEE ADVENTURER", 20, TextAnchor.MiddleRight, new Color(0.61f, 0.69f, 0.68f));
+            SetRect(role.rectTransform, new Vector2(0.48f, 0.80f), new Vector2(0.945f, 0.95f));
 
+            var crest = CreatePanel("ClassCrest", classPanel.transform, new Color(0.025f, 0.045f, 0.05f, 1f));
+            SetRect(crest.rectTransform, new Vector2(0.055f, 0.38f), new Vector2(0.29f, 0.75f));
+            crest.raycastTarget = false;
+            var crestOutline = crest.gameObject.AddComponent<Outline>();
+            crestOutline.effectColor = new Color(_warm.r, _warm.g, _warm.b, 0.8f);
+            crestOutline.effectDistance = new Vector2(3f, -3f);
+            var crestText = CreateText("Initial", crest.transform, "W", 76, TextAnchor.MiddleCenter, _warm);
+            Stretch(crestText.rectTransform);
+
+            var attributes = CreateText("Attributes", classPanel.transform, "STARTING ATTRIBUTES", 19, TextAnchor.MiddleLeft, new Color(0.61f, 0.69f, 0.68f));
+            SetRect(attributes.rectTransform, new Vector2(0.34f, 0.68f), new Vector2(0.94f, 0.78f));
+            CreateCreationStatRow(classPanel.transform, "HEALTH", configuration.BaseHealth.ToString(), 0.53f, new Color(1f, 0.45f, 0.43f));
+            CreateCreationStatRow(classPanel.transform, "MANA", configuration.BaseMana.ToString(), 0.39f, new Color(0.43f, 0.7f, 1f));
+            CreateCreationStatRow(classPanel.transform, "MELEE DAMAGE", configuration.BaseMeleeDamage.ToString(), 0.25f, _warm);
+
+            var trait = CreatePanel("ClassTrait", classPanel.transform, new Color(0.04f, 0.075f, 0.08f, 1f));
+            SetRect(trait.rectTransform, new Vector2(0.055f, 0.055f), new Vector2(0.945f, 0.21f));
+            trait.raycastTarget = false;
+            var traitLabel = CreateText("Label", trait.transform, "COMBAT STYLE", 17, TextAnchor.MiddleLeft, new Color(0.55f, 0.64f, 0.63f));
+            SetRect(traitLabel.rectTransform, new Vector2(0.035f, 0.50f), new Vector2(0.37f, 0.92f));
+            var traitCopy = CreateText("Copy", trait.transform, "Cardinal movement. Bump enemies to strike.", 21, TextAnchor.MiddleRight, Color.white);
+            SetRect(traitCopy.rectTransform, new Vector2(0.31f, 0.08f), new Vector2(0.965f, 0.92f));
+
+            var nameLabel = CreateText("NameLabel", root, "CHARACTER NAME", 21, TextAnchor.MiddleLeft, new Color(0.62f, 0.71f, 0.7f));
+            SetRect(nameLabel.rectTransform, new Vector2(0.10f, 0.36f), new Vector2(0.90f, 0.405f));
             _nameInput = CreateInputField("CharacterName", root, "Character name");
-            SetRect(_nameInput.GetComponent<RectTransform>(), new Vector2(0.12f, 0.36f), new Vector2(0.88f, 0.44f));
-            CreateButton("Create", root, "CREATE", 34, new Vector2(0.12f, 0.23f), new Vector2(0.88f, 0.32f), CreateCharacter);
-            CreateButton("Back", root, "BACK", 30, new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.2f), ShowCharacterSelection);
+            SetRect(_nameInput.GetComponent<RectTransform>(), new Vector2(0.10f, 0.285f), new Vector2(0.90f, 0.36f));
+            var create = CreateButton("Create", root, "CREATE WAYFARER", 30, new Vector2(0.10f, 0.17f), new Vector2(0.90f, 0.255f), CreateCharacter);
+            create.image.color = new Color(0.08f, 0.31f, 0.25f, 1f);
+            CreateButton("Back", root, "BACK TO CHARACTERS", 25, new Vector2(0.10f, 0.08f), new Vector2(0.90f, 0.145f), ShowCharacterSelection);
             return root;
+        }
+
+        private static void CreateCreationStatRow(Transform parent, string label, string value, float minY, Color valueColor)
+        {
+            var row = CreatePanel(label.Replace(" ", string.Empty), parent, new Color(0.04f, 0.075f, 0.08f, 1f));
+            SetRect(row.rectTransform, new Vector2(0.34f, minY), new Vector2(0.945f, minY + 0.115f));
+            row.raycastTarget = false;
+            var caption = CreateText("Label", row.transform, label, 19, TextAnchor.MiddleLeft, new Color(0.59f, 0.68f, 0.67f));
+            SetRect(caption.rectTransform, new Vector2(0.045f, 0.08f), new Vector2(0.68f, 0.92f));
+            var amount = CreateText("Value", row.transform, value, 30, TextAnchor.MiddleRight, valueColor);
+            SetRect(amount.rectTransform, new Vector2(0.64f, 0.08f), new Vector2(0.955f, 0.92f));
         }
 
         private RectTransform BuildGameplayScreen(Transform parent)
@@ -261,40 +324,46 @@ namespace OneStep.Gameplay.Overworld
             _campfireModal.SetActive(false);
             _deathModal.SetActive(false);
             SetGameplayInput(false);
-            RefreshCharacterCard();
+            RefreshCharacterCards();
         }
 
-        private void ShiftSlotLeft()
+        private void RefreshCharacterCards()
         {
-            _selectedSlot = (_selectedSlot + CharacterRosterData.SlotCount - 1) % CharacterRosterData.SlotCount;
-            RefreshCharacterCard();
-        }
-
-        private void ShiftSlotRight()
-        {
-            _selectedSlot = (_selectedSlot + 1) % CharacterRosterData.SlotCount;
-            RefreshCharacterCard();
-        }
-
-        private void RefreshCharacterCard()
-        {
-            if (_slotCounter == null)
+            if (_characterCards.Count != CharacterRosterData.SlotCount)
             {
                 return;
             }
 
-            _slotCounter.text = $"{_selectedSlot + 1} / {CharacterRosterData.SlotCount}";
-            var character = _roster.slots[_selectedSlot].character;
-            if (character == null)
+            for (var index = 0; index < _characterCards.Count; index++)
             {
-                _cardText.text = "+\n\nEMPTY SLOT\n\nCREATE CHARACTER";
-                _cardButton.image.color = new Color(0.06f, 0.12f, 0.12f, 1f);
-                return;
+                _characterCards[index].Bind(_roster.slots[index]);
             }
 
-            var action = character.HasSavedAdventure ? $"RESUME ADVENTURE  •  {character.activeAdventure.progress} STEPS" : "START NEW ADVENTURE";
-            _cardText.text = $"{character.displayName.ToUpperInvariant()}\n\n{character.classId.ToUpperInvariant()}\nLEVEL {character.level}\nHP {character.maxHealth}  •  MP {character.maxMana}\nDAMAGE {character.meleeDamage}\nBEST {character.bestProgress} STEPS\n\n{action}";
-            _cardButton.image.color = _panel;
+            _characterCarousel.Select(_selectedSlot, false);
+            UpdateSlotIndicator();
+        }
+
+        private void HandleCarouselSelectionChanged(int slotIndex)
+        {
+            _selectedSlot = slotIndex;
+            UpdateSlotIndicator();
+        }
+
+        private void HandleCarouselSlotActivated(int slotIndex)
+        {
+            _selectedSlot = slotIndex;
+            ActivateSelectedSlot();
+        }
+
+        private void UpdateSlotIndicator()
+        {
+            _slotCounter.text = $"{_selectedSlot + 1:00} / {CharacterRosterData.SlotCount:00}";
+            for (var index = 0; index < _slotDots.Length; index++)
+            {
+                var selected = index == _selectedSlot;
+                _slotDots[index].text = selected ? "O" : "o";
+                _slotDots[index].color = selected ? _accent : new Color(0.30f, 0.39f, 0.39f);
+            }
         }
 
         private void ActivateSelectedSlot()
@@ -304,6 +373,7 @@ namespace OneStep.Gameplay.Overworld
             {
                 _selectionScreen.SetActive(false);
                 _creationScreen.SetActive(true);
+                _creationSlotLabel.text = $"SLOT {_selectedSlot + 1:00}";
                 _nameInput.text = string.Empty;
                 _nameInput.ActivateInputField();
                 return;
@@ -488,81 +558,6 @@ namespace OneStep.Gameplay.Overworld
             var rect = CreateRect(name, parent);
             Stretch(rect);
             return rect;
-        }
-
-        private Image CreatePanel(string name, Transform parent, Color color)
-        {
-            var image = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
-            image.transform.SetParent(parent, false);
-            image.color = color;
-            return image;
-        }
-
-        private Text CreateText(string name, Transform parent, string value, int size, TextAnchor alignment, Color color)
-        {
-            var text = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Text)).GetComponent<Text>();
-            text.transform.SetParent(parent, false);
-            text.font = _font;
-            text.text = value;
-            text.fontSize = size;
-            text.alignment = alignment;
-            text.color = color;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
-            text.raycastTarget = false;
-            return text;
-        }
-
-        private Button CreateButton(string name, Transform parent, string label, int size, Vector2 min, Vector2 max, Action clicked)
-        {
-            var button = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button)).GetComponent<Button>();
-            button.transform.SetParent(parent, false);
-            SetRect(button.GetComponent<RectTransform>(), min, max);
-            button.image.color = new Color(0.1f, 0.28f, 0.24f, 1f);
-            var text = CreateText("Label", button.transform, label, size, TextAnchor.MiddleCenter, Color.white);
-            Stretch(text.rectTransform, new Vector2(14f, 8f), new Vector2(-14f, -8f));
-            button.onClick.AddListener(() => clicked());
-            return button;
-        }
-
-        private InputField CreateInputField(string name, Transform parent, string placeholderText)
-        {
-            var input = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(InputField)).GetComponent<InputField>();
-            input.transform.SetParent(parent, false);
-            input.image.color = new Color(0.04f, 0.08f, 0.09f, 1f);
-            var value = CreateText("Text", input.transform, string.Empty, 32, TextAnchor.MiddleLeft, Color.white);
-            Stretch(value.rectTransform, new Vector2(24f, 0f), new Vector2(-24f, 0f));
-            var placeholder = CreateText("Placeholder", input.transform, placeholderText, 30, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.35f));
-            Stretch(placeholder.rectTransform, new Vector2(24f, 0f), new Vector2(-24f, 0f));
-            input.textComponent = value;
-            input.placeholder = placeholder;
-            input.characterLimit = 16;
-            return input;
-        }
-
-        private static RectTransform CreateRect(string name, Transform parent)
-        {
-            var rect = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
-            rect.SetParent(parent, false);
-            return rect;
-        }
-
-        private static void SetRect(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax)
-        {
-            rect.anchorMin = anchorMin;
-            rect.anchorMax = anchorMax;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            rect.localScale = Vector3.one;
-        }
-
-        private static void Stretch(RectTransform rect, Vector2? offsetMin = null, Vector2? offsetMax = null)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = offsetMin ?? Vector2.zero;
-            rect.offsetMax = offsetMax ?? Vector2.zero;
-            rect.localScale = Vector3.one;
         }
 
         private static void EnsureEventSystem()

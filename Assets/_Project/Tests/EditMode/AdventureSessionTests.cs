@@ -142,5 +142,29 @@ namespace OneStep.Tests.EditMode
             Assert.That(saved.slots[0].character.HasSavedAdventure, Is.True);
             Assert.That(saved.slots[0].character.activeAdventure.progress, Is.EqualTo(100));
         }
+
+        [TestCase(2, -90f, 0f, 5, 3)]
+        [TestCase(2, 90f, 0f, 5, 1)]
+        [TestCase(2, -20f, -500f, 5, 3)]
+        [TestCase(2, 20f, 500f, 5, 1)]
+        [TestCase(0, 100f, 0f, 5, 0)]
+        [TestCase(4, -100f, 0f, 5, 4)]
+        public void CharacterCarousel_ChoosesOneBoundedSlotPerGesture(
+            int startIndex,
+            float dragDelta,
+            float velocity,
+            int slotCount,
+            int expectedIndex)
+        {
+            var target = CharacterCarouselMath.CalculateTargetIndex(
+                startIndex,
+                dragDelta,
+                velocity,
+                slotCount,
+                dragThreshold: 72f,
+                velocityThreshold: 420f);
+
+            Assert.That(target, Is.EqualTo(expectedIndex));
+        }
     }
 }

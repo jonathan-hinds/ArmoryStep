@@ -5,7 +5,7 @@ Unity `6000.4.10f1` mobile/WebGL vertical slice modeled on OneBit Adventure's ch
 ## Play
 
 1. Open `Assets/_Project/Scenes/Adventure.unity` and enter Play Mode.
-2. Select one of five cards. An empty card creates the placeholder Wayfarer; an existing card starts or resumes its run.
+2. Swipe the five-slot character carousel and tap the centered card. An empty card creates the placeholder Wayfarer; an existing card starts or resumes its run.
 3. Touch/click an unused gameplay area and drag from that exact point. The temporary joystick is cardinal, repeats at turn-safe cadence, and disappears on release. A tap waits one turn.
 4. WASD/arrows, gamepad d-pad/stick, and Space-to-wait are silent desktop alternatives.
 
