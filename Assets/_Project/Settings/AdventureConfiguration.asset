@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2b7a8d24862314438d5e398f9db5d52, type: 3}
+  m_Name: AdventureConfiguration
+  m_EditorClassIdentifier: OneStep.Gameplay.Overworld::OneStep.Gameplay.Overworld.AdventureConfiguration
+  worldWidth: 9
+  initialGeneratedRows: 32
+  generationLookAhead: 24
+  campfireInterval: 100
+  downwardScreenLimit: 6
+  baseHealth: 24
+  baseMana: 8
+  baseMeleeDamage: 5
+  placeholderClassName: Wayfarer
+  joystickThreshold: 0.065
+  joystickInitialRepeatDelay: 0.28
+  joystickRepeatRate: 0.14
+  keyboardRepeatRate: 0.14
+  enemies:
+  - kind: 0
+    displayName: Slime
+    maxHealth: 8
+    damage: 2
+    experienceReward: 5
+    color: {r: 0.38, g: 0.86, b: 0.51, a: 1}
+  - kind: 1
+    displayName: Bat
+    maxHealth: 6
+    damage: 2
+    experienceReward: 6
+    color: {r: 0.72, g: 0.47, b: 0.92, a: 1}
+  - kind: 2
+    displayName: Skeleton
+    maxHealth: 12
+    damage: 4
+    experienceReward: 8
+    color: {r: 0.86, g: 0.85, b: 0.72, a: 1}

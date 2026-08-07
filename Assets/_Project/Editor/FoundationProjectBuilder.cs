@@ -4,6 +4,7 @@ using System.Linq;
 using OneStep.Bootstrap;
 using OneStep.Core.Configuration;
 using OneStep.Input;
+using OneStep.Gameplay.Overworld;
 using OneStep.Networking;
 using OneStep.Platform;
 using OneStep.Presentation.Camera;
@@ -39,6 +40,8 @@ namespace OneStep.Editor
         private const string InputPath = SettingsPath + "/Input/OneStepControls.inputactions";
         private const string BootstrapScenePath = ScenesPath + "/Bootstrap.unity";
         private const string TestScenePath = ScenesPath + "/FoundationTest.unity";
+        private const string AdventureScenePath = ScenesPath + "/Adventure.unity";
+        private const string AdventureConfigurationPath = SettingsPath + "/AdventureConfiguration.asset";
         private const string BuildSettingsPath = SettingsPath + "/Build";
 
         [MenuItem("Tools/OneStep/Build Foundation")]
@@ -47,6 +50,9 @@ namespace OneStep.Editor
             EnsureFolders();
             var viewport = LoadOrCreate<ViewportConfiguration>(ViewportPath);
             var services = LoadOrCreate<ServicesConfiguration>(ServicesPath);
+            var adventure = LoadOrCreate<AdventureConfiguration>(AdventureConfigurationPath);
+            adventure.EnsureDefaults();
+            EditorUtility.SetDirty(adventure);
             var developmentBuild = LoadOrCreate<WebBuildConfiguration>(BuildSettingsPath + "/Development.asset");
             developmentBuild.Configure("Builds/Web/Development", true);
             EditorUtility.SetDirty(developmentBuild);
@@ -62,8 +68,15 @@ namespace OneStep.Editor
 
             var gridSprite = CreateGridSprite(viewport);
             var markerSprite = CreateMarkerSprite();
-            CreateBootstrapScene(services);
-            CreateFoundationTestScene(viewport, inputActions, gridSprite, markerSprite);
+            if (!File.Exists(BootstrapScenePath))
+            {
+                CreateBootstrapScene(services);
+            }
+            CreateAdventureScene(viewport, adventure);
+            if (!File.Exists(TestScenePath))
+            {
+                CreateFoundationTestScene(viewport, inputActions, gridSprite, markerSprite);
+            }
             ApplyProjectSettings();
             ConfigureBuildScenes();
             AssetDatabase.SaveAssets();
@@ -91,7 +104,7 @@ namespace OneStep.Editor
             networkManager.RunInBackground = true;
 
             var bootstrap = root.AddComponent<AppBootstrap>();
-            bootstrap.Configure(identity, duel, "FoundationTest");
+            bootstrap.Configure(identity, duel, "Adventure");
 
             var cameraObject = new GameObject("BootstrapCamera", typeof(UnityEngine.Camera));
             cameraObject.tag = "MainCamera";
@@ -107,6 +120,52 @@ namespace OneStep.Editor
             light.intensity = 1f;
 
             EditorSceneManager.SaveScene(scene, BootstrapScenePath);
+        }
+
+        private static void CreateAdventureScene(ViewportConfiguration viewport, AdventureConfiguration adventure)
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            scene.name = "Adventure";
+
+            var letterboxObject = new GameObject("LetterboxCamera", typeof(UnityEngine.Camera));
+            letterboxObject.transform.position = new Vector3(0f, 0f, -10f);
+            var letterboxCamera = letterboxObject.GetComponent<UnityEngine.Camera>();
+            letterboxCamera.clearFlags = CameraClearFlags.SolidColor;
+            letterboxCamera.backgroundColor = viewport.LetterboxColor;
+            letterboxCamera.cullingMask = 0;
+            letterboxCamera.depth = -100f;
+
+            var cameraObject = new GameObject("PortraitCamera", typeof(UnityEngine.Camera), typeof(UnityEngine.U2D.PixelPerfectCamera));
+            cameraObject.tag = "MainCamera";
+            cameraObject.transform.position = new Vector3((adventure.WorldWidth - 1) * 0.5f, viewport.OrthographicSize - 0.5f, -10f);
+            var camera = cameraObject.GetComponent<UnityEngine.Camera>();
+            camera.orthographic = true;
+            camera.orthographicSize = viewport.OrthographicSize;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = viewport.LetterboxColor;
+            camera.depth = 0f;
+            var pixelCamera = cameraObject.GetComponent<UnityEngine.U2D.PixelPerfectCamera>();
+            pixelCamera.assetsPPU = viewport.AssetsPixelsPerUnit;
+            pixelCamera.refResolutionX = viewport.ReferenceWidth;
+            pixelCamera.refResolutionY = viewport.ReferenceHeight;
+            pixelCamera.cropFrameX = false;
+            pixelCamera.cropFrameY = false;
+            pixelCamera.pixelSnapping = true;
+            pixelCamera.upscaleRT = false;
+            var fixedViewport = cameraObject.AddComponent<FixedPortraitViewport>();
+            fixedViewport.Configure(viewport);
+
+            var lightObject = new GameObject("GlobalLight2D");
+            var light = lightObject.AddComponent<Light2D>();
+            light.lightType = Light2D.LightType.Global;
+            light.intensity = 1f;
+
+            var game = new GameObject("OneBitGame");
+            var root = game.AddComponent<OneBitGameRoot>();
+            root.Configure(adventure);
+            game.AddComponent<WebViewportMonitor>();
+
+            EditorSceneManager.SaveScene(scene, AdventureScenePath);
         }
 
         private static void CreateFoundationTestScene(
@@ -498,8 +557,7 @@ namespace OneStep.Editor
         {
             EditorBuildSettings.scenes = new[]
             {
-                new EditorBuildSettingsScene(BootstrapScenePath, true),
-                new EditorBuildSettingsScene(TestScenePath, true)
+                new EditorBuildSettingsScene(AdventureScenePath, true)
             };
         }
     }

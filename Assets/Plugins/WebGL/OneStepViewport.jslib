@@ -10,6 +10,8 @@ mergeInto(LibraryManager.library, {
     window.addEventListener("resize", notify, { passive: true });
     window.addEventListener("orientationchange", notify, { passive: true });
     document.addEventListener("fullscreenchange", notify);
-    window.visualViewport?.addEventListener("resize", notify, { passive: true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", notify, { passive: true });
+    }
   }
 });

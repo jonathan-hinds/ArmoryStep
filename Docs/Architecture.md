@@ -11,7 +11,7 @@
 | `OneStep.Services` | Unity Gaming Services initialization and anonymous player identity |
 | `OneStep.Networking` | Duel invitation/session lifecycle, Relay WSS selection, disconnect and host-change events |
 | `OneStep.Bootstrap` | Composition root and the connection-test screen |
-| `OneStep.Gameplay.Overworld` | Empty future feature boundary for map, movement, turns, interaction, and content |
+| `OneStep.Gameplay.Overworld` | Character roster, run snapshots, procedural grid, turns, combat, progression, input interpretation, camera follow, and runtime presentation |
 | `OneStep.Gameplay.Duel` | Empty future feature boundary for duel rules, synchronization, and migration snapshots |
 
 Editor and tests are isolated in `OneStep.Editor`, `OneStep.Tests.EditMode`, and `OneStep.Tests.PlayMode`. Gameplay assemblies are not auto-referenced, preventing unfinished features from leaking into the foundation.
@@ -32,14 +32,16 @@ Web-only assets live in Unity-standard locations: `Assets/Plugins/WebGL` and `As
 
 ## Scenes
 
-`Bootstrap` is build index 0. Its persistent composition root owns UGS identity, Multiplayer Services, Netcode for GameObjects, Unity Transport, and browser resize notifications. It loads `FoundationTest` after initialization.
+`Adventure` is build index 0 and has no online-service dependency, keeping mobile/WebGL startup immediate and offline-safe. `Bootstrap` remains available as a diagnostics composition root for UGS identity, Multiplayer Services, Netcode for GameObjects, Unity Transport, and browser resize notifications, but is not in player build settings.
 
-`FoundationTest` contains a static 9-by-16 reference grid, non-moving player marker, pixel-perfect camera, 2D global light, safe-area visualization, layered UI, raw input diagnostics, and the multiplayer connection test. The marker does not move and no turn is advanced.
+`Adventure` is the playable scene. `OneBitGameRoot` composes the five-slot UI and session; `AdventureSession` owns deterministic rules; `AdventureWorld` owns generated map data; `AdventureWorldView` renders Ground, Detail, Obstacle, Interactable, Character, and Effect Tilemaps. Character and run data are plain serializable objects persisted through a repository boundary.
+
+`FoundationTest` remains an editor-only diagnostics scene for viewport, raw input, safe-area, and multiplayer validation; it is not in player build settings.
 
 ## Future extension rules
 
-- Map data, collision, movement validation, turn scheduling, and camera-follow rules start in `OneStep.Gameplay.Overworld`, consuming abstract Input actions rather than devices.
+- Add content through `AdventureConfiguration` and session/world policies; presentation must not become the authority for rules or saves.
 - Duel rules and replicated game state start in `OneStep.Gameplay.Duel`, consuming `IDuelSessionService`; networking must not own game rules.
-- Implement `IPlayerDataStore` in a persistence-specific module when the save format is known. Do not serialize gameplay MonoBehaviours directly.
+- Production/cloud persistence can replace `PlayerPrefsCharacterRepository` behind `ICharacterRepository`. MonoBehaviours are never serialized as gameplay state.
 - Add ScriptableObject content definitions under `Data` and authoring tools under `Editor`; keep runtime systems content-agnostic.
 - Host migration currently exposes host-change and migration strategy boundaries. Actual world snapshot transfer must be designed with duel state, not guessed during setup.

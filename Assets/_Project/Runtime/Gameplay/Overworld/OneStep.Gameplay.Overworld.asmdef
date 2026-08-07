@@ -1,6 +1,13 @@
 {
   "name": "OneStep.Gameplay.Overworld",
   "rootNamespace": "OneStep.Gameplay.Overworld",
-  "references": ["OneStep.Core", "OneStep.Input"],
+  "references": [
+    "OneStep.Core",
+    "OneStep.Input",
+    "OneStep.Platform",
+    "Unity.InputSystem",
+    "Unity.InputSystem.ForUI",
+    "Unity.ugui"
+  ],
   "autoReferenced": false
 }

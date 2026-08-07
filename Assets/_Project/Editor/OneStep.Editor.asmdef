@@ -5,6 +5,7 @@
     "OneStep.Bootstrap",
     "OneStep.Core",
     "OneStep.Input",
+    "OneStep.Gameplay.Overworld",
     "OneStep.Networking",
     "OneStep.Platform",
     "OneStep.Presentation",
